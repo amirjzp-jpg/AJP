@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* NIGHT — brand hero state */
+  --night-base: #08171b;
+  --night-panel: #0e2b33;
+  --night-deep: #1b2328;
+  --cyan: #31e8ff;
+  --neon-magenta: #ff4fd8;
+  --neon-amber: #ffb25e;
+  --titanium: #d7d9db;
+  --white: #f7f7f7;
+  --hairline: rgba(215, 217, 219, 0.14);
+
+  --ease-instrument: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-resolve: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 0.4s;
+  --dur-mid: 0.8s;
+  --dur-slow: 1.6s;
+}
+
+html {
+  background: var(--night-base);
+  color: var(--titanium);
+  scroll-behavior: auto;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+::selection {
+  background: rgba(49, 232, 255, 0.25);
+  color: var(--white);
+}
+
+/* Mono instrument voice — uppercase, wide-tracked */
+.instrument {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+
+.hairline {
+  border-color: var(--hairline);
+  border-width: 1px;
+}
+
+/* Cyan focus ring — keyboard visibility floor */
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* Crosshair reticle cursor on interactive canvas targets (desktop) */
+.reticle-cursor {
+  cursor: crosshair;
+}
+
+@media (pointer: coarse) {
+  .reticle-cursor {
+    cursor: default;
+  }
+}
+
+/* Scroll length driver for the cinematic — canvas itself is fixed */
+.scroll-track {
+  height: 700vh;
+}
+
+/* SEO layer serves crawlers/no-JS; hidden once either experience mounts */
+html[data-experience] #seo-layer {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Thin scrollbar, night-toned */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--night-base);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--night-panel);
+}
