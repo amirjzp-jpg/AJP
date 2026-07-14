@@ -43,6 +43,27 @@ const seedState = { v: 20260713 };
 
 function pickTarget(a: Agent) {
   const d = districts[a.district];
+  if (d.behavior === "street") {
+    // Sidewalk walkers: targets snapped beside the 24-unit avenue grid, so
+    // pedestrians visibly travel ALONG streets instead of cutting across.
+    const grid = 24;
+    const side = (rand(seedState) > 0.5 ? 1 : -1) * (1.5 + rand(seedState) * 0.9);
+    if (rand(seedState) < 0.5) {
+      const line = Math.round(a.z / grid) * grid;
+      a.tz = line + side;
+      a.tx = a.x + (rand(seedState) - 0.5) * 56;
+    } else {
+      const line = Math.round(a.x / grid) * grid;
+      a.tx = line + side;
+      a.tz = a.z + (rand(seedState) - 0.5) * 56;
+    }
+    const rr = Math.hypot(a.tx, a.tz);
+    if (rr > 76) {
+      a.tx *= 76 / rr;
+      a.tz *= 76 / rr;
+    }
+    return;
+  }
   if (d.behavior === "ecosystem" && d.nodes && d.nodes.length > 1) {
     // Shuttle between towers: the customer-ecosystem read (§19)
     a.node = (a.node + 1 + Math.floor(rand(seedState) * (d.nodes.length - 1))) % d.nodes.length;

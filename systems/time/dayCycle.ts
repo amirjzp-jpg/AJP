@@ -35,8 +35,24 @@ type Key = {
   crowdDensity: number;
 };
 
-// earlyMorning · morning · noon · dusk · night (§11)
+// deepNight · earlyMorning · morning · noon · dusk · night (§11)
+// The 03:00 key holds the brand-night look through the small hours, so
+// 1 a.m. never drifts toward dawn colors.
 const KEYS: Key[] = [
+  {
+    hour: 3,
+    skyTop: "#04090C",
+    skyBottom: "#0E2B33",
+    sunColor: "#31E8FF",
+    sunIntensity: 0.12,
+    sunElevation: 0.5,
+    hemiSky: "#12333D",
+    hemiGround: "#0A1418",
+    fogColor: "#081B21",
+    fogDensity: 0.004,
+    night: 1.0,
+    crowdDensity: 0.22,
+  },
   {
     hour: 5,
     skyTop: "#2A2350",
@@ -109,7 +125,7 @@ const KEYS: Key[] = [
   },
 ];
 
-const NIGHT_KEY = KEYS[4];
+const NIGHT_KEY = KEYS[KEYS.length - 1]; // hour-22 brand night
 
 export function getLocalTimeOfDay(date = new Date()): number {
   return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;

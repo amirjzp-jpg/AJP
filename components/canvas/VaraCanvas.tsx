@@ -8,6 +8,7 @@ import { SkyDome } from "./SkyDome";
 import { Ground } from "./Ground";
 import { City } from "./City";
 import { Transit } from "./Transit";
+import { Props } from "./Props";
 import { Crowds } from "./Crowds";
 import { Founder } from "./Founder";
 import { Lights } from "./Lights";
@@ -55,6 +56,7 @@ export default function VaraCanvas() {
           <Ground />
           <City />
           <Transit />
+          <Props />
           <Crowds />
           <Founder />
           <DistrictHotspots />

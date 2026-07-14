@@ -15,7 +15,7 @@ import { dampFactor, dampAngle } from "@/lib/damp";
  * (HARD §8) so motion is glassy at 60, 120, or 144Hz — never a fixed alpha.
  */
 
-const COUNTS = { high: 480, mid: 300, low: 120 } as const;
+const COUNTS = { high: 720, mid: 460, low: 200 } as const;
 
 // Muted citizen wardrobe + Bomi Pet audience-segment hues (§19)
 const WARDROBE = ["#8E979E", "#A6ADB3", "#6E7A81", "#B7AA98", "#7E8B84", "#96867E"];
@@ -52,8 +52,8 @@ export function Crowds() {
       x: d.position[0],
       z: d.position[1],
       r: d.radius,
-      behavior: d.crowdBehavior,
-      weight: d.kind === "project" ? 1.6 : d.kind === "construction" ? 0.4 : 1,
+      behavior: d.crowdBehavior as string,
+      weight: d.kind === "project" ? 2.4 : d.kind === "construction" ? 0.4 : 1,
       nodes:
         d.id === "bomi-pet"
           ? ([
@@ -63,6 +63,9 @@ export function Crowds() {
             ] as [number, number][])
           : undefined,
     }));
+    // Sidewalk population: pedestrians commuting along the avenue grid —
+    // roughly a third of the city walks the streets between districts.
+    defs.push({ x: 0, z: 0, r: 76, behavior: "street", weight: 4, nodes: undefined });
 
     // Pre-compute which district each agent lands in (mirrors worker allocation)
     const totalWeight = defs.reduce((s, d) => s + d.weight, 0);
@@ -149,6 +152,7 @@ export function Crowds() {
 
     for (let i = 0; i < rs.length; i++) {
       const r = rs[i];
+      let moving = 0;
       if (buf && buf.length >= (i + 1) * 4) {
         const o = i * 4;
         const first = r.scale === 0 && buf[o + 3] > 0;
@@ -158,6 +162,7 @@ export function Crowds() {
           r.z = buf[o + 1];
           r.heading = buf[o + 2];
         } else {
+          moving = Math.min(1, Math.hypot(buf[o] - r.x, buf[o + 1] - r.z) * 6);
           r.x += (buf[o] - r.x) * kPos;
           r.z += (buf[o + 1] - r.z) * kPos;
           r.heading = dampAngle(r.heading, buf[o + 2], 10, dt);
@@ -165,9 +170,15 @@ export function Crowds() {
         const targetScale = buf[o + 3] * popIn;
         r.scale += (targetScale - r.scale) * dampFactor(3, dt);
       }
-      dummy.position.set(r.x, Math.max(0, Math.sin(t * 7 + i) * 0.03) * r.scale, r.z);
-      dummy.rotation.set(0, -r.heading + Math.PI / 2, 0);
-      dummy.scale.setScalar(r.scale);
+      // Walking gait: step-bob + slight side-to-side sway, scaled by how
+      // fast this agent is actually moving; height varies per person.
+      const stature = 0.88 + ((i * 29) % 23) / 100;
+      const phase = t * 8.5 + i * 1.7;
+      const bob = Math.abs(Math.sin(phase)) * 0.055 * moving;
+      const sway = Math.sin(phase) * 0.09 * moving;
+      dummy.position.set(r.x, bob * r.scale, r.z);
+      dummy.rotation.set(0, -r.heading + Math.PI / 2, sway);
+      dummy.scale.setScalar(r.scale * stature);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
     }

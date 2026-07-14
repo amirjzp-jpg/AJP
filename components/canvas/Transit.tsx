@@ -3,6 +3,7 @@
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
+import { mergeBufferGeometries } from "three-stdlib";
 import { paletteNow } from "@/systems/time/dayCycle";
 import { useVaraStore } from "@/store/useVaraStore";
 
@@ -39,13 +40,26 @@ function blockLoop(cx: number, cz: number, half: number): THREE.CatmullRomCurve3
   return new THREE.CatmullRomCurve3(pts, true, "catmullrom", 0.08);
 }
 
-const CAR_LOOPS = [
-  { curve: blockLoop(0, 0, 24), count: 8 },
-  { curve: blockLoop(-24, 24, 24), count: 6 },
-  { curve: blockLoop(24, -24, 24), count: 6 },
-  { curve: blockLoop(24, 48, 24), count: 5 },
-  { curve: blockLoop(-48, -24, 24), count: 5 },
-];
+// One loop per city block, checkerboard direction — adjacent blocks share
+// avenues, so every street carries traffic in both directions.
+const CAR_LOOPS = (() => {
+  const loops: { curve: THREE.CatmullRomCurve3; count: number; speed: number; dir: 1 | -1 }[] = [];
+  const centers = [-36, -12, 12, 36];
+  let k = 0;
+  for (const cx of centers) {
+    for (const cz of centers) {
+      const cw = (Math.round((cx + cz) / 24) & 1) === 0;
+      loops.push({
+        curve: blockLoop(cx, cz, 10.8),
+        count: 3 + (k % 3),
+        speed: 0.016 + (k % 4) * 0.005,
+        dir: cw ? 1 : -1,
+      });
+      k++;
+    }
+  }
+  return loops;
+})();
 
 const CAR_COLORS = ["#D7D9DB", "#FFB25E", "#31E8FF", "#FF4FD8", "#9AA6AC"];
 
@@ -71,6 +85,15 @@ export function Transit() {
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const tmpNext = useMemo(() => new THREE.Vector3(), []);
   const carColorsSet = useRef(false);
+
+  // Body + cabin silhouette so cars read as cars, not crates.
+  const carGeo = useMemo(() => {
+    const body = new THREE.BoxGeometry(0.72, 0.34, 1.5);
+    body.translate(0, 0.32, 0);
+    const cabin = new THREE.BoxGeometry(0.6, 0.26, 0.72);
+    cabin.translate(0, 0.62, -0.12);
+    return mergeBufferGeometries([body, cabin])!;
+  }, []);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
@@ -112,13 +135,14 @@ export function Transit() {
       for (const loop of CAR_LOOPS) {
         const visible = Math.round(loop.count * THREE.MathUtils.lerp(0.3, 1, density)) * alive;
         for (let i = 0; i < loop.count; i++) {
-          const u = (t * 0.02 + i / loop.count) % 1;
+          const raw = (t * loop.speed * loop.dir + (i / loop.count) * loop.dir + 100) % 1;
+          const u = raw < 0 ? raw + 1 : raw;
           const p = loop.curve.getPointAt(u);
-          loop.curve.getPointAt((u + 0.01) % 1, tmpNext);
+          loop.curve.getPointAt((u + 0.01 * loop.dir + 1) % 1, tmpNext);
           dummy.position.copy(p);
           dummy.lookAt(tmpNext);
           const s = i < visible ? 1 : 0;
-          dummy.scale.set(0.7 * s, 0.5 * s, 1.3 * s);
+          dummy.scale.setScalar(s);
           dummy.updateMatrix();
           carsRef.current.setMatrixAt(idx++, dummy.matrix);
         }
@@ -174,9 +198,8 @@ export function Transit() {
         <meshBasicMaterial ref={podMat} color="#D7D9DB" />
       </instancedMesh>
 
-      <instancedMesh ref={carsRef} args={[undefined, undefined, carTotal]} frustumCulled={false}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshBasicMaterial color="#D7D9DB" />
+      <instancedMesh ref={carsRef} args={[carGeo, undefined, carTotal]} frustumCulled={false}>
+        <meshBasicMaterial color="#FFFFFF" />
       </instancedMesh>
     </group>
   );

@@ -53,7 +53,8 @@ app/                 layout (fonts/meta), page (SSR SEO layer), OG image, sitema
 components/
   Experience.tsx     input, scroll, capability detection, fallback switch
   canvas/            City (1 instanced draw call), SkyDome, Ground, Transit,
-                     Crowds, Founder, CameraRig, PostFX, GenesisDriver
+                     Props (lamps/trees/billboards/drones), Crowds, Founder,
+                     CameraRig, PostFX, GenesisDriver
   hud/               diegetic HUD, case-study panel, founder intro
   fallback/          2D no-WebGL experience
 systems/

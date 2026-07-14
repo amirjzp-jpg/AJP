@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { DISTRICTS, type District } from "@/data/districts";
+import { posCurve } from "@/systems/camera/path";
 
 /**
  * Deterministic procedural city (§13). Everything is data-driven from
@@ -333,6 +334,28 @@ export function buildCity(): BuildingInstance[] {
       seed: rand() * 1000,
     });
   }
+  // --- Camera corridor clearance ---
+  // The cinematic dips low through the quarters; any tower that would
+  // faceplant the ride gets clamped just below the flight path, so the
+  // camera threads BETWEEN towers instead of through them. Meridian is
+  // exempt — the path is authored around it.
+  const samples: { x: number; z: number; y: number }[] = [];
+  const v = new THREE.Vector3();
+  for (let i = 0; i <= 240; i++) {
+    posCurve.getPointAt(i / 240, v);
+    samples.push({ x: v.x, z: v.z, y: v.y });
+  }
+  for (const b of out) {
+    if (b.districtId === "meridian") continue;
+    const halfFoot = (b.w + b.d) * 0.25;
+    for (const s of samples) {
+      const d = Math.hypot(b.x - s.x, b.z - s.z) - halfFoot;
+      if (d < 8 && (b.y ?? 0) + b.h > s.y - 4) {
+        b.h = Math.max(2, s.y - 6 - (b.y ?? 0));
+      }
+    }
+  }
+
   cache = out;
   return out;
 }
